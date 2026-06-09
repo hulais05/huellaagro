@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HuellaAgro — Dashboard de Carbono</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --gd: #1B3A2D; --gp: #2D6A4F; --gm: #40916C; --gl: #52B788; --gpa: #74C69D;
+  --ed: #6B4226; --em: #8B5E3C; --el: #C4956A;
+  --sand: #F2E8D9; --sandl: #FAF5EE; --cream: #F8F4EE;
+  --td: #1A2E1F; --tm: #3D5C47; --tl: #6B8C72;
+  --border: #D4E8DA; --warn: #E9C46A; --danger: #E76F51; --info: #3A86FF;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--cream); color:var(--td); min-height:100vh; }
+
+/* HEADER */
+.hdr { background:linear-gradient(135deg,var(--gd),var(--gp)); color:#fff; padding:0 24px;
+  display:flex; align-items:center; justify-content:space-between; height:62px;
+  position:sticky; top:0; z-index:100; box-shadow:0 2px 8px rgba(0,0,0,.2); }
+.hdr-logo { display:flex; align-items:center; gap:12px; }
+.logo-icon { width:36px; height:36px; background:rgba(255,255,255,.18); border-radius:8px;
+  display:flex; align-items:center; justify-content:center; font-size:20px; }
+.logo-txt { font-size:20px; font-weight:800; letter-spacing:-.5px; }
+.logo-txt span { color:var(--gpa); }
+.badges { display:flex; gap:7px; }
+.badge { background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.28);
+  border-radius:20px; padding:3px 11px; font-size:11px; font-weight:600; letter-spacing:.4px; }
+.btn-exp { background:var(--gl); color:#fff; border:none; padding:8px 16px;
+  border-radius:6px; font-size:13px; font-weight:700; cursor:pointer; }
+.period { font-size:12px; opacity:.75; }
+.hdr-right { display:flex; align-items:center; gap:12px; }
+
+/* LAYOUT */
+.layout { display:grid; grid-template-columns:370px 1fr; min-height:calc(100vh - 62px); }
+
+/* SIDEBAR */
+.sidebar { background:#fff; border-right:1px solid var(--border);
+  overflow-y:auto; height:calc(100vh - 62px); position:sticky; top:62px; }
+.sidebar::-webkit-scrollbar { width:4px; }
+.sidebar::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+.sb-hdr { padding:16px 22px 14px; background:var(--sandl); border-bottom:1px solid var(--border); }
+.sb-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+.sb-sub { font-size:11px; color:var(--tl); margin-top:3px; }
+
+/* Estab */
+.estab { padding:14px 22px 16px; border-bottom:1px solid var(--border); background:var(--sandl); }
+.eg { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+
+/* Scope sections */
+.sc-sec { border-bottom:1px solid var(--border); }
+.sc-hdr { padding:13px 22px; cursor:pointer; display:flex; align-items:center; gap:10px;
+  user-select:none; transition:background .15s; }
+.sc-hdr:hover { background:var(--sandl); }
+.sc-badge { width:28px; height:28px; border-radius:6px; display:flex; align-items:center;
+  justify-content:center; font-size:11px; font-weight:800; flex-shrink:0; }
+.s1 .sc-badge { background:#FFF0EB; color:#E76F51; }
+.s2 .sc-badge { background:#FFF9E6; color:#C4870A; }
+.s3 .sc-badge { background:#EBF2FF; color:#3A86FF; }
+.sc-name { flex:1; }
+.sc-name-t { font-size:13px; font-weight:700; }
+.sc-name-d { font-size:11px; color:var(--tl); }
+.sc-tot { text-align:right; font-size:12px; font-weight:700; color:var(--gp); }
+.sc-tot-u { font-size:10px; color:var(--tl); font-weight:400; }
+.chev { font-size:10px; color:var(--tl); transition:transform .2s; }
+.sc-body { padding:8px 22px 14px; }
+.sc-body.hide { display:none; }
+
+/* Inputs */
+.ig { margin-bottom:13px; }
+.il { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+.lt { font-size:12px; font-weight:600; color:var(--tm); }
+.lu { font-size:11px; color:var(--tl); }
+.ir { display:flex; align-items:center; gap:7px; }
+.inp { flex:1; border:1px solid var(--border); border-radius:6px; padding:7px 11px;
+  font-size:13px; background:var(--sandl); outline:none; transition:border-color .15s,box-shadow .15s; }
+.inp:focus { border-color:var(--gm); box-shadow:0 0 0 3px rgba(64,145,108,.1); background:#fff; }
+.ico2 { font-size:11px; color:var(--tl); min-width:66px; text-align:right; }
+.ico2 b { color:var(--gp); font-weight:700; }
+.fn { font-size:10px; color:var(--tl); font-style:italic; margin-top:3px; }
+
+/* MAIN */
+.main { padding:22px; overflow-y:auto; }
+
+/* KPIs */
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px; }
+.kpi { background:#fff; border-radius:12px; padding:18px; border:1px solid var(--border); box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.kpi.hl { background:linear-gradient(135deg,var(--gp),var(--gm)); border:none; }
+.kpi-lbl { font-size:11px; font-weight:600; color:var(--tl); text-transform:uppercase; letter-spacing:.5px; margin-bottom:7px; }
+.kpi.hl .kpi-lbl { color:rgba(255,255,255,.72); }
+.kpi-val { font-size:28px; font-weight:800; color:var(--td); line-height:1; margin-bottom:3px; }
+.kpi.hl .kpi-val { color:#fff; }
+.kpi-unit { font-size:12px; color:var(--tl); }
+.kpi.hl .kpi-unit { color:rgba(255,255,255,.8); }
+.kpi-ch { font-size:12px; margin-top:7px; }
+.kpi-ch.up { color:var(--danger); } .kpi-ch.dn { color:var(--gl); } .kpi-ch.neu { color:var(--tl); }
+
+/* Chart row */
+.cr { display:grid; grid-template-columns:1fr 1.6fr; gap:14px; margin-bottom:14px; }
+.cc { background:#fff; border-radius:12px; padding:18px; border:1px solid var(--border); box-shadow:0 1px 4px rgba(0,0,0,.04); }
+.cc-t { font-size:13px; font-weight:700; color:var(--td); margin-bottom:3px; }
+.cc-s { font-size:11px; color:var(--tl); margin-bottom:14px; }
+
+/* Bottom row */
+.br { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+
+/* Benchmark */
+.bm-item { margin-bottom:16px; }
+.bm-lbl { display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px; }
+.bm-name { font-weight:600; }
+.bm-track { height:8px; background:var(--sand); border-radius:4px; position:relative; overflow:visible; }
+.bm-fill { height:100%; border-radius:4px; background:var(--gp); transition:width .5s ease; }
+.bm-marker { position:absolute; top:-5px; height:18px; width:2px; background:var(--ed); border-radius:1px; }
+.bm-ml { position:absolute; top:-20px; font-size:10px; color:var(--ed); font-weight:700;
+  transform:translateX(-50%); white-space:nowrap; }
+.bm-ref-note { margin-top:12px; padding:9px 11px; background:var(--sandl); border-radius:7px; font-size:10px; color:var(--tm); }
+
+/* Recs */
+.rec-list { list-style:none; }
+.rec-item { display:flex; gap:10px; padding:11px 0; border-bottom:1px solid var(--border); }
+.rec-item:last-child { border-bottom:none; }
+.rec-ico { width:28px; height:28px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0; }
+.rh { background:#FFF0EB; } .rm { background:#FFF9E6; } .rl { background:#EBF2FF; }
+.rec-txt { font-size:12px; line-height:1.5; }
+.rec-title { font-weight:700; margin-bottom:2px; }
+.rec-desc { color:var(--tm); }
+
+/* Table */
+.fr { margin-bottom:14px; }
+.src-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.src-tbl th { text-align:left; padding:8px 11px; background:var(--sandl);
+  color:var(--tl); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.3px; }
+.src-tbl td { padding:9px 11px; border-bottom:1px solid var(--border); }
+.src-tbl tr:hover td { background:var(--sandl); }
+.src-tbl tfoot td { background:var(--sandl); font-weight:700; padding:10px 11px; }
+.dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:5px; }
+.d1 { background:#E76F51; } .d2 { background:#F4A261; } .d3 { background:#3A86FF; }
+.pct-bar { display:flex; align-items:center; gap:5px; }
+.pct-fill { height:6px; background:var(--gl); border-radius:3px; }
+
+/* Status pill */
+.pill { display:inline-flex; align-items:center; padding:4px 10px;
+  border-radius:20px; font-size:11px; font-weight:700; }
+.p-alto { background:#FFF0EB; color:#E76F51; }
+.p-med  { background:#FFF9E6; color:#C4870A; }
+.p-bajo { background:#E8F7EF; color:#2D6A4F; }
+
+/* Cert */
+.cert-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:10px; }
+.cert-item { display:flex; align-items:center; gap:7px; padding:8px 10px;
+  background:var(--sandl); border-radius:6px; font-size:11px; color:var(--tm); }
+
+/* Donut legend */
+.dl { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin-top:12px; }
+.dl-item { display:flex; align-items:center; gap:5px; font-size:11px; }
+.dl-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+.footer { text-align:center; padding:20px 0; font-size:10px; color:var(--tl); }
+
+@media(max-width:1100px) {
+  .layout { grid-template-columns:310px 1fr; }
+  .kpi-grid { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-logo">
+    <div class="logo-icon">🌿</div>
+    <div class="logo-txt">Huella<span>Agro</span></div>
+    <div class="badges">
+      <span class="badge">ISO 14064-1</span>
+      <span class="badge">GHG Protocol</span>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="period">Período: Enero–Diciembre <span id="hdr-anio">2025</span></span>
+    <button class="btn-exp" onclick="window.print()">↓ Exportar Informe</button>
+  </div>
+</header>
+
+<div class="layout">
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<aside class="sidebar">
+  <div class="sb-hdr">
+    <div class="sb-title">Datos del Establecimiento</div>
+    <div class="sb-sub">Completá cada fuente de emisión para calcular tu huella</div>
+  </div>
+
+  <div class="estab">
+    <div class="eg">
+      <div class="ig" style="margin:0">
+        <div class="il"><span class="lt">Nombre</span></div>
+        <input class="inp" id="nombre" value="La Esperanza" oninput="update()">
+      </div>
+      <div class="ig" style="margin:0">
+        <div class="il"><span class="lt">Año</span></div>
+        <input class="inp" type="number" id="anio" value="2025" oninput="update()">
+      </div>
+      <div class="ig" style="margin:0">
+        <div class="il"><span class="lt">Hectáreas totales</span></div>
+        <input class="inp" type="number" id="has" value="500" oninput="update()">
+      </div>
+      <div class="ig" style="margin:0">
+        <div class="il"><span class="lt">Toneladas granos/año</span></div>
+        <input class="inp" type="number" id="tons" value="1400" oninput="update()">
+      </div>
+    </div>
+  </div>
+
+  <!-- SCOPE 1 -->
+  <div class="sc-sec s1">
+    <div class="sc-hdr" onclick="tog('b1','c1')">
+      <div class="sc-badge">S1</div>
+      <div class="sc-name">
+        <div class="sc-name-t">Emisiones Directas</div>
+        <div class="sc-name-d">Combustibles · Fertilizantes · Ganado</div>
+      </div>
+      <div class="sc-tot"><div id="s1t">—</div><div class="sc-tot-u">tCO₂e</div></div>
+      <div class="chev" id="c1">▲</div>
+    </div>
+    <div class="sc-body" id="b1">
+      <div class="ig">
+        <div class="il"><span class="lt">Gasoil (tractores/equipos)</span><span class="lu">litros/año</span></div>
+        <div class="ir">
+          <input class="inp" type="number" id="gasoil" value="20000" oninput="update()">
+          <div class="ico2"><b id="r_gasoil">—</b> tCO₂e</div>
+        </div>
+        <div class="fn">Factor: 2.683 kg CO₂e/L (IPCC 2006 Vol.2)</div>
+      </div>
+      <div class="ig">
+        <div class="il"><span class="lt">Urea – fertilizante nitrogenado</span><span class="lu">kg/año</span></div>
+        <div class="ir">
+          <input class="inp" type="number" id="urea" value="40000" oninput="update()">
+          <div class="ico2"><b id="r_urea">—</b> tCO₂e</div>
+        </div>
+        <div class="fn">CO₂ hidrólisis + N₂O directo (IPCC Tier 1) → 2.95 kg CO₂e/kg</div>
+      </div>
+      <div class="ig">
+        <div class="il"><span class="lt">Fermentación entérica (bovinos)</span><span class="lu">cabezas</span></div>
+        <div class="ir">
+          <input class="inp" type="number" id="bovinos" value="300" oninput="update()">
+          <div class="ico2"><b id="r_enter">—</b> tCO₂e</div>
+        </div>
+        <div class="fn">57 kg CH₄/cab/año × GWP 28 (AR5) = 1.596 t CO₂e/cab</div>
+      </div>
+      <div class="ig">
+        <div class="il"><span class="lt">Gestión de estiércol (bovinos)</span><span class="lu">cabezas</span></div>
+        <div class="ir">
+          <input class="inp" type="number" id="estiercol" value="300" oninput="update()">
+          <div class="ico2"><b id="r_estiercol">—</b> tCO₂e</div>
+        </div>
+        <div class="fn">CH₄ + N₂O estiércol pastoreo extensivo (IPCC Tier 1)</div>
+      </div>
+      <div class="ig">
+        <div class="il"><span class="lt">Quema de rastrojos</span><span class="lu">ha/año</span></div>
+        <div class="ir">
+          <input class="inp" type="number" id="rastrojos" value="0" oninput="update()">
+          <div class="ico2"><b id="r_rast">—</b> tCO₂e</div>
+        </div>
+        <div class="fn">0.78 tCO₂e/ha quemada (soja/maíz, IPCC Agric.)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCOPE 2 -->
+  <div class="sc-sec s2">
+    <div class="sc-hdr" onclick="tog('b2','c2')">
+      <div class="sc-badge">S2</div>
+      <div class="sc-name">
+        <div class="sc-name-t">Energía Indirecta</div>
+        <div class="sc-name-d">Electricidad · Gas comprado</div>
+      </div>
+      <div class="sc-tot"><div id="s2t">—</div><div class="sc-tot-u">tCO₂e</div></div>
+      <div class="chev" id="c2">▼</div>
+    </div>
+    <div class="sc-body hide" id="b2">
+      <div class="ig">
+        <div class="il"><span class="lt">Electricidad de red</span><span class="lu">kWh/año</span></div>
+        <div class="ir">
+          <input class="inp" type="number" id="elec" value="50000" oninput="update()">
+          <div class="ico2"><b id="r_elec">—</b> tCO₂e</div>
+        </div>
+        <div class="fn">Factor red Argentina: 0.39 kg CO₂e/kWh (MINEM 2024)</div>
+      </div>
+      <div class="ig">
+        <div class="il"><span class="lt">Gas natural</span><span class="lu">m³/año</span></div>
+        <div class="ir">
+          <input class="inp" type="number" id="gasnat" value="0" oninput="update()">
+          <div class="ico2"><b id="r_gas">—</b> tCO₂e</div>
+        </div>
+        <div class="fn">Factor: 2.04 kg CO₂e/m³ (IPCC 2006)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCOPE 3 -->
+  <div class="sc-sec s3">
+    <div class="sc-hdr" onclick="tog('b3','c3')">
+      <div class="sc-badge">S3</div>
+      <div class="sc-name">
+        <div class="sc-name-t">Cadena de Valor</div>
+        <div class="sc-name-d">Upstream: insumos · transporte</div>
+      </div>
+      <div class="sc-tot"><div id="s3t">—</div><div class="sc-tot-u">tCO₂e</div></div>
+      <div class="chev" id="c3">▼</div>
+    </div>
+    <div class="sc-body hide" id="b3">
+      <div class="ig">
+        <div class="il"><span class="lt">Producción de fertilizantes (upstream)</span><span class="lu">kg urea/año</span></div>
+        <div class="ir">
+          <input class="inp" type="number" id="fup" value="40000" oninput="update()">
+          <div class="ico2"><b id="r_fup">—</b> tCO₂e</div>
+        </div>
+        <div class="fn">1.30 kg CO₂e/kg urea (fabricación industrial, ecoinvent)</div>
+      </div>
+      <div class="ig">
+        <div class="il"><span class="lt">Transporte de granos (camión)</span><span class="lu">t × km</span></div>
+        <div class="ir">
+          <input class="inp" type="number" id="tkm" value="280000" oninput="update()">
+          <div class="ico2"><b id="r_tkm">—</b> tCO₂e</div>
+        </div>
+        <div class="fn">0.10 kg CO₂e/tkm (camión, ECOTRANSIT)</div>
+      </div>
+      <div class="ig">
+        <div class="il"><span class="lt">Agroquímicos (fabricación)</span><span class="lu">kg producto/año</span></div>
+        <div class="ir">
+          <input class="inp" type="number" id="agro" value="800" oninput="update()">
+          <div class="ico2"><b id="r_agro">—</b> tCO₂e</div>
+        </div>
+        <div class="fn">18 kg CO₂e/kg (estimado industria química)</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<main class="main">
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi hl">
+      <div class="kpi-lbl">Huella Total</div>
+      <div class="kpi-val"><span id="kpi-total">—</span></div>
+      <div class="kpi-unit">tCO₂ equivalente / año</div>
+      <div class="kpi-ch neu" id="kpi-st">Calculando…</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Intensidad por Hectárea</div>
+      <div class="kpi-val"><span id="kpi-ha">—</span></div>
+      <div class="kpi-unit">tCO₂e / ha / año</div>
+      <div class="kpi-ch neu" id="kpi-ha-ref">Ref. mixto NOA: 1.8 tCO₂e/ha</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Intensidad por Tonelada</div>
+      <div class="kpi-val"><span id="kpi-tn">—</span></div>
+      <div class="kpi-unit">tCO₂e / tn granos</div>
+      <div class="kpi-ch neu" id="kpi-tn-ref">Ref. soja Argentina: 0.45 tCO₂e/tn</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Alcances Declarados</div>
+      <div class="kpi-val">3<span style="font-size:16px;color:var(--tl)">/3</span></div>
+      <div class="kpi-unit">Scopes cubiertos</div>
+      <div class="kpi-ch dn">✓ Conforme ISO 14064-1</div>
+    </div>
+  </div>
+
+  <!-- Charts row -->
+  <div class="cr">
+    <div class="cc">
+      <div class="cc-t">Distribución por Alcance</div>
+      <div class="cc-s">Scope 1 / 2 / 3 en tCO₂e</div>
+      <div style="position:relative;height:210px"><canvas id="donut"></canvas></div>
+      <div class="dl" id="dl"></div>
+    </div>
+    <div class="cc">
+      <div class="cc-t">Fuentes de Emisión</div>
+      <div class="cc-s">Desagregado por actividad (tCO₂e) — top 8</div>
+      <div style="position:relative;height:210px"><canvas id="bar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Bottom row -->
+  <div class="br">
+    <div class="cc">
+      <div class="cc-t">Comparativa con Benchmarks Sectoriales</div>
+      <div class="cc-s">Intensidad emisiones vs. referencias AAPRESID / FAO / NOA</div>
+      <div id="bm-sec"></div>
+    </div>
+    <div class="cc">
+      <div class="cc-t">Oportunidades de Reducción</div>
+      <div class="cc-s">Palancas de mayor impacto identificadas</div>
+      <ul class="rec-list" id="recs"></ul>
+    </div>
+  </div>
+
+  <!-- Full table -->
+  <div class="fr cc">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div class="cc-t">Inventario de Emisiones — Detalle</div>
+        <div class="cc-s">Conforme ISO 14064-1:2018 / GHG Protocol Agricultural Guidance</div>
+      </div>
+      <span class="pill" id="status-pill">—</span>
+    </div>
+    <table class="src-tbl">
+      <thead><tr>
+        <th>Alcance</th><th>Categoría</th><th>Actividad / Fuente</th>
+        <th>Factor</th><th style="text-align:right">tCO₂e</th><th style="text-align:right">% Total</th>
+      </tr></thead>
+      <tbody id="tbl-body"></tbody>
+      <tfoot><tr>
+        <td colspan="4">TOTAL INVENTARIO GEI</td>
+        <td style="text-align:right" id="tbl-total">—</td>
+        <td style="text-align:right">100 %</td>
+      </tr></tfoot>
+    </table>
+  </div>
+
+  <!-- Cert readiness -->
+  <div class="fr cc">
+    <div class="cc-t">Estado de Preparación — Certificación ISO 14064-1</div>
+    <div class="cc-s">Checklist para verificación de tercera parte (IRAM / Bureau Veritas)</div>
+    <div class="cert-grid">
+      <div class="cert-item">✅ Límites organizacionales definidos</div>
+      <div class="cert-item">✅ Scope 1, 2 y 3 declarados</div>
+      <div class="cert-item">✅ Factores IPCC referenciados</div>
+      <div class="cert-item">✅ GWP AR5 aplicado (CH₄=28, N₂O=265)</div>
+      <div class="cert-item">⏳ Verificación por tercera parte (pendiente)</div>
+      <div class="cert-item">⏳ Año base declarado (requiere ≥2 años)</div>
+      <div class="cert-item">⏳ Plan de reducción documentado</div>
+      <div class="cert-item">✅ Incertidumbre evaluada (Tier 1)</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Metodología: GHG Protocol Agricultural Guidance · ISO 14064-1:2018 · Factores IPCC AR5 (2013) ·
+    Factor eléctrico MINEM Argentina 2024 · Benchmarks: AAPRESID, FAO-LAC, ESG Consulting NOA
+  </div>
+</main>
+</div>
+
+<script>
+// ── Factores de emisión ──────────────────────────────────────────────
+const F = {
+  gasoil:   2.683,   // kg CO2e/L
+  urea:     2.95,    // kg CO2e/kg (CO2 hidrólisis + N2O directo Tier1)
+  enterico: 57*28/1000, // tCO2e/cab/año  (57 kg CH4 × GWP 28)
+  estiercol:0.14,    // tCO2e/cab/año  (CH4+N2O pastoreo extensivo)
+  rastrojos:0.78,    // tCO2e/ha quemada
+  elec:     0.39,    // kg CO2e/kWh  (MINEM Argentina 2024)
+  gasnat:   2.04,    // kg CO2e/m3
+  fup:      1.30,    // kg CO2e/kg urea (producción upstream)
+  tkm:      0.10,    // kg CO2e/tkm (camión)
+  agro:     18,      // kg CO2e/kg agroquímico
+};
+
+// ── Benchmarks ───────────────────────────────────────────────────────
+const BM_HA  = 1.80;  // tCO2e/ha mixto NOA
+const BM_TN  = 0.45;  // tCO2e/tn soja ARG (AAPRESID)
+
+// ── Charts ───────────────────────────────────────────────────────────
+let cDonut, cBar;
+
+function initCharts() {
+  cDonut = new Chart(document.getElementById('donut'), {
+    type: 'doughnut',
+    data: { labels:['Scope 1','Scope 2','Scope 3'], datasets:[{
+      data:[0,0,0], backgroundColor:['#E76F51','#F4A261','#3A86FF'],
+      borderWidth:2, borderColor:'#fff'
+    }]},
+    options: { responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ label: c => {
+          const t = c.dataset.data.reduce((a,b)=>a+b,0)||1;
+          return ` ${c.parsed.toFixed(1)} tCO₂e (${(c.parsed/t*100).toFixed(1)}%)`;
+        }}}
+      }
+    }
+  });
+
+  cBar = new Chart(document.getElementById('bar'), {
+    type:'bar',
+    data:{ labels:[], datasets:[{data:[], backgroundColor:[], borderRadius:4, borderSkipped:false}]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false},
+        tooltip:{ callbacks:{ label: c => ` ${c.parsed.x.toFixed(1)} tCO₂e` }}
+      },
+      scales:{
+        x:{ grid:{color:'rgba(0,0,0,.04)'}, ticks:{font:{size:11}} },
+        y:{ grid:{display:false}, ticks:{font:{size:11}} }
+      }
+    }
+  });
+}
+
+function g(id)  { return parseFloat(document.getElementById(id).value)||0; }
+function el(id) { return document.getElementById(id); }
+function fmt(n) { return n.toLocaleString('es-AR',{maximumFractionDigits:1}); }
+
+function update() {
+  // header year
+  el('hdr-anio').textContent = el('anio').value || '2025';
+
+  // ── Scope 1 ──
+  const gasoil_c  = g('gasoil')   * F.gasoil   / 1000;
+  const urea_c    = g('urea')     * F.urea     / 1000;
+  const enter_c   = g('bovinos')  * F.enterico;
+  const estier_c  = g('estiercol')* F.estiercol;
+  const rast_c    = g('rastrojos')* F.rastrojos;
+  const s1 = gasoil_c + urea_c + enter_c + estier_c + rast_c;
+
+  // ── Scope 2 ──
+  const elec_c  = g('elec')   * F.elec   / 1000;
+  const gas_c   = g('gasnat') * F.gasnat / 1000;
+  const s2 = elec_c + gas_c;
+
+  // ── Scope 3 ──
+  const fup_c  = g('fup')  * F.fup  / 1000;
+  const tkm_c  = g('tkm')  * F.tkm  / 1000;
+  const agro_c = g('agro') * F.agro / 1000;
+  const s3 = fup_c + tkm_c + agro_c;
+
+  const total = s1 + s2 + s3;
+  const has   = g('has')  || 1;
+  const tons  = g('tons') || 1;
+  const iha   = total / has;
+  const itn   = total / tons;
+
+  // ── Inline results ──
+  [['r_gasoil',gasoil_c],['r_urea',urea_c],['r_enter',enter_c],
+   ['r_estiercol',estier_c],['r_rast',rast_c],
+   ['r_elec',elec_c],['r_gas',gas_c],
+   ['r_fup',fup_c],['r_tkm',tkm_c],['r_agro',agro_c]
+  ].forEach(([id,v]) => el(id).textContent = v.toFixed(1));
+
+  el('s1t').textContent = s1.toFixed(1);
+  el('s2t').textContent = s2.toFixed(1);
+  el('s3t').textContent = s3.toFixed(1);
+
+  // ── KPIs ──
+  el('kpi-total').textContent = fmt(total);
+  el('kpi-ha').textContent    = iha.toFixed(2);
+  el('kpi-tn').textContent    = itn.toFixed(2);
+
+  const pctHa = ((iha - BM_HA) / BM_HA * 100);
+  let stCls, stTxt, pillCls, pillTxt;
+  if (iha < BM_HA * 0.85) {
+    stCls='dn'; stTxt=`↓ ${Math.abs(pctHa).toFixed(0)}% bajo benchmark`;
+    pillCls='p-bajo'; pillTxt='BAJO IMPACTO';
+  } else if (iha < BM_HA * 1.15) {
+    stCls='neu'; stTxt='~ En línea con benchmark';
+    pillCls='p-med'; pillTxt='IMPACTO MEDIO';
+  } else {
+    stCls='up'; stTxt=`↑ ${Math.abs(pctHa).toFixed(0)}% sobre benchmark`;
+    pillCls='p-alto'; pillTxt='IMPACTO ALTO';
+  }
+  const kst = el('kpi-st');
+  kst.className='kpi-ch '+stCls; kst.textContent=stTxt;
+  const pill = el('status-pill');
+  pill.className='pill '+pillCls; pill.textContent=pillTxt;
+
+  // ── Donut ──
+  cDonut.data.datasets[0].data = [s1, s2, s3];
+  cDonut.update('none');
+  const tt = total || 1;
+  el('dl').innerHTML = [
+    {l:'Scope 1',v:s1,c:'#E76F51'},
+    {l:'Scope 2',v:s2,c:'#F4A261'},
+    {l:'Scope 3',v:s3,c:'#3A86FF'},
+  ].map(d=>`<div class="dl-item">
+    <div class="dl-dot" style="background:${d.c}"></div>
+    <span><b>${d.l}</b>: ${d.v.toFixed(1)} t (${(d.v/tt*100).toFixed(0)}%)</span>
+  </div>`).join('');
+
+  // ── Bar ──
+  const srcs = [
+    {l:'Ferment. entérica', v:enter_c,  c:'#E76F51'},
+    {l:'Fertiliz. campo',   v:urea_c,   c:'#E07A60'},
+    {l:'Gasoil',            v:gasoil_c, c:'#D45B3A'},
+    {l:'Estiércol',         v:estier_c, c:'#E8926E'},
+    {l:'Fertil. upstream',  v:fup_c,    c:'#3A86FF'},
+    {l:'Transporte granos', v:tkm_c,    c:'#6FA8FF'},
+    {l:'Electricidad',      v:elec_c,   c:'#F4A261'},
+    {l:'Agroquímicos',      v:agro_c,   c:'#90BFFF'},
+    {l:'Rastrojos',         v:rast_c,   c:'#B84020'},
+    {l:'Gas natural',       v:gas_c,    c:'#FFB87A'},
+  ].filter(d=>d.v>0).sort((a,b)=>b.v-a.v).slice(0,8);
+
+  cBar.data.labels                       = srcs.map(d=>d.l);
+  cBar.data.datasets[0].data             = srcs.map(d=>d.v);
+  cBar.data.datasets[0].backgroundColor  = srcs.map(d=>d.c);
+  cBar.update('none');
+
+  // ── Benchmark ──
+  const maxHa = Math.max(iha, BM_HA) * 1.35;
+  const maxTn = Math.max(itn, BM_TN) * 1.35;
+  el('bm-sec').innerHTML = `
+    <div class="bm-item">
+      <div class="bm-lbl">
+        <span class="bm-name">Intensidad por hectárea</span>
+        <span style="color:var(--tm)">${iha.toFixed(2)} tCO₂e/ha</span>
+      </div>
+      <div class="bm-track">
+        <div class="bm-fill" style="width:${Math.min(iha/maxHa*100,100)}%"></div>
+        <div class="bm-marker" style="left:${BM_HA/maxHa*100}%">
+          <div class="bm-ml">Ref. ${BM_HA}</div>
+        </div>
+      </div>
+    </div>
+    <div class="bm-item">
+      <div class="bm-lbl">
+        <span class="bm-name">Intensidad por tonelada (granos)</span>
+        <span style="color:var(--tm)">${itn.toFixed(2)} tCO₂e/tn</span>
+      </div>
+      <div class="bm-track">
+        <div class="bm-fill" style="width:${Math.min(itn/maxTn*100,100)}%"></div>
+        <div class="bm-marker" style="left:${BM_TN/maxTn*100}%">
+          <div class="bm-ml">Ref. ${BM_TN}</div>
+        </div>
+      </div>
+    </div>
+    <div class="bm-ref-note">
+      <b>Referencias:</b> AAPRESID (soja/maíz ARG) · FAO/IPCC (ganadería LAC) · ESG Consulting NOA (mixto)
+    </div>`;
+
+  // ── Recommendations ──
+  const rs = [];
+  if (enter_c/total > 0.35)
+    rs.push({ico:'🐄',cls:'rh',t:'Reducir fermentación entérica',
+      d:`Representa el ${(enter_c/total*100).toFixed(0)}% de la huella. Mejora genética, aditivos (3-NOP) o cambio de dieta reduce hasta un 20% (${(enter_c*.2).toFixed(0)} tCO₂e/año).`});
+  if (urea_c/total > 0.08)
+    rs.push({ico:'🌱',cls:'rm',t:'Optimizar nitrógeno — fertilización de precisión',
+      d:`Inhibidores de nitrificación o urea NBPT reducen N₂O entre 20–40%. Potencial: ${(urea_c*.3).toFixed(0)} tCO₂e/año menos.`});
+  if (gasoil_c/total > 0.03)
+    rs.push({ico:'⛽',cls:'rm',t:'Siembra directa + eficiencia de maquinaria',
+      d:`GPS de precisión y mantenimiento preventivo pueden bajar consumo de gasoil hasta 15% → ${(gasoil_c*.15).toFixed(0)} tCO₂e/año.`});
+  if (elec_c > 5)
+    rs.push({ico:'☀️',cls:'rl',t:'Energía solar fotovoltaica',
+      d:`Páneles solares eliminarían ${elec_c.toFixed(0)} tCO₂e/año (Scope 2). Repago típico ARG: 4–6 años.`});
+  rs.push({ico:'📋',cls:'rl',t:'Verificación ISO 14064 para exportación',
+    d:'Mercados UE y UK requieren verificación de tercera parte. Contactar IRAM, Bureau Veritas o SGS Argentina.'});
+
+  el('recs').innerHTML = rs.map(r=>`
+    <li class="rec-item">
+      <div class="rec-ico ${r.cls}">${r.ico}</div>
+      <div class="rec-txt"><div class="rec-title">${r.t}</div><div class="rec-desc">${r.d}</div></div>
+    </li>`).join('');
+
+  // ── Detail table ──
+  const rows = [
+    {sc:1,dot:'d1',cat:'Combustión móvil',        nm:'Gasoil (tractores/equipos)',      f:'2.683 kg CO₂e/L',   v:gasoil_c},
+    {sc:1,dot:'d1',cat:'Proceso agrícola',         nm:'Fertilizante urea (N₂O + CO₂)',  f:'2.95 kg CO₂e/kg',   v:urea_c},
+    {sc:1,dot:'d1',cat:'Fermentación entérica',    nm:'Ganado bovino (CH₄)',             f:'1.596 tCO₂e/cab',   v:enter_c},
+    {sc:1,dot:'d1',cat:'Gestión estiércol',        nm:'Estiércol bovino (CH₄+N₂O)',     f:'0.14 tCO₂e/cab',    v:estier_c},
+    {sc:1,dot:'d1',cat:'Quema biomasa',            nm:'Rastrojos',                       f:'0.78 tCO₂e/ha',     v:rast_c},
+    {sc:2,dot:'d2',cat:'Electricidad comprada',    nm:'Red eléctrica Argentina',         f:'0.39 kg CO₂e/kWh',  v:elec_c},
+    {sc:2,dot:'d2',cat:'Combustible calefacción',  nm:'Gas natural',                     f:'2.04 kg CO₂e/m³',   v:gas_c},
+    {sc:3,dot:'d3',cat:'Cat.1 Bienes comprados',   nm:'Producción fertilizantes upstream',f:'1.30 kg CO₂e/kg', v:fup_c},
+    {sc:3,dot:'d3',cat:'Cat.4 Transporte',         nm:'Flete de granos (camión)',        f:'0.10 kg CO₂e/tkm',  v:tkm_c},
+    {sc:3,dot:'d3',cat:'Cat.1 Bienes comprados',   nm:'Agroquímicos (fabricación)',      f:'18 kg CO₂e/kg',     v:agro_c},
+  ];
+  const tTot = rows.reduce((a,r)=>a+r.v,0) || 1;
+  el('tbl-body').innerHTML = rows.map(r=>{
+    const pct = r.v/tTot*100;
+    const bar = Math.max(Math.round(pct*1.2),1);
+    return `<tr>
+      <td><span class="dot ${r.dot}"></span>Scope ${r.sc}</td>
+      <td style="color:var(--tl)">${r.cat}</td>
+      <td style="font-weight:600">${r.nm}</td>
+      <td style="color:var(--tl)">${r.f}</td>
+      <td style="text-align:right;font-weight:700;color:var(--gp)">${r.v.toFixed(1)}</td>
+      <td style="text-align:right">
+        <div class="pct-bar">
+          <div class="pct-fill" style="width:${bar}px;min-width:2px"></div>
+          <span style="font-size:11px;color:var(--tm);min-width:36px">${pct.toFixed(1)}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  el('tbl-total').textContent = fmt(tTot) + ' tCO₂e';
+}
+
+function tog(bodyId, chevId) {
+  const b = el(bodyId), c = el(chevId);
+  const hidden = b.classList.toggle('hide');
+  c.textContent = hidden ? '▼' : '▲';
+}
+
+initCharts();
+update();
+</script>
+</body>
+</html>
